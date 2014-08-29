@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<title>Callbacks</title>
+</head>
+
+<body>
+	<p id="display1">Strings</p>
+	<p id="display2">Numbers</p>
+	<p id="display3">Persons by name</p>
+	<p id="display4">Persons by age</p>
+	<p id="display5">Persons by id</p>
+	
+	
+	<script>
+		//Sorts the given array comparing elements with the callback. Input:
+		//set :				is an array of comparable objects.
+		//callback(a, b) :	is a function that compares objects of 'set'. Must return >0 if a goes to the right of b, and <0 otherwise.
+		function sort(set, callback)
+		{
+			var aux;
+
+			for(var cnt2 = 1; cnt2 < set.length; ++cnt2)
+			{
+				aux = set[cnt2];
+				for(var cnt = cnt2 + 1; cnt > 0; --cnt)
+				{
+					if(cnt > 1 && callback(set[cnt - 2], aux) > 0) set[cnt-1] = set[cnt-2];
+					else
+					{
+						set[cnt-1] = aux;
+						break;
+					}
+				}
+			}
+		}
+		
+		
+		//Sort strings in ascending order.
+		disp1 = document.getElementById("display1");
+		var array = ["bc", "ab", "zd", "aa", "ef", "cf"];
+		sort(array, function(a, b){return (a>b ? 1 : -1);});
+		disp1.innerHTML = "Strings ascending:<br>" + array;
+		
+		
+		//Sort numbers in descending order.
+		disp2 = document.getElementById("display2");
+		var array2 = [4, 2, 7, 1, 8, 9, 10]
+		sort(array2, function(a, b){return (a>b ? -1 : 1);});
+		disp2.innerHTML = "Numbers descending:<br>" + array2;
+		
+		//An object that has name, age and id.
+		function Person(name, age, id)
+		{
+			this.name = name;
+			this.age = age;
+			this.id = id;
+			//Returns a string interpretation of the attributes.
+			this.string = function(){return name + ", " + age + ", " + id;}
+		}
+		
+		
+		//Define callbacks for sorting by name, by age and by id.
+		function byName(p1, p2){return (p1.name > p2.name ? 1 : -1)}
+		function byAge(p1, p2){return (p1.age > p2.age ? 1 : -1)}
+		function byId(p1, p2){return (p1.id > p2.id ? 1 : -1)}
+		
+		//Define an array of persons.
+		var persons = [	new Person("Marcos", 27, 234),
+						new Person("Rudy", 30, 45),
+						new Person("Jonathan", 22, 235),
+						new Person("Rogelio", 21, 4564),
+						new Person("Benjamin", 31, 123),
+						new Person("Giovanni", 25, 342)]
+						
+		var str = "";
+		//Sort persons by name.
+		sort(persons, byName)
+		str = "By name:<br>"
+		for(var i = 0; i < persons.length; ++i) str += persons[i].string() + "<br> ";
+		disp3 = document.getElementById("display3");
+		disp3.innerHTML = str;
+		//Sort persons by age.
+		sort(persons, byAge)
+		str = "By age:<br>"
+		for(var i = 0; i < persons.length; ++i) str += persons[i].string() + "<br> ";
+		disp3 = document.getElementById("display4");
+		disp3.innerHTML = str;
+		//Sort persons by id.
+		sort(persons, byId)
+		str = "By id:<br>"
+		for(var i = 0; i < persons.length; ++i) str += persons[i].string() + "<br> ";
+		disp3 = document.getElementById("display5");
+		disp3.innerHTML = str;
+		
+		
+		
+	</script>
+</body>
+
+</html>
