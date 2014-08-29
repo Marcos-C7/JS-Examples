@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html>
+<!-- The header -->
+<head>
+	<title>C7 JavaScript</title>
+	<style> body{margin:0px; padding:0px;} </style>
+</head>
+
+<!-- The body -->
+<body style="background-color:#232b17;">
+	<!-- The upper bar with the title -->
+	<div style="background-color:#a6cb45;width:100%;">
+		<h1 style="text-align:center;color:#394625;padding:5px;">Experiment with the color components</h1>
+	</div><br />
+	<!-- An "invisivle" left bar -->
+	<div style="background-color:#232b17;height:300px;width:15%;float:left"></div>
+	<!-- The central rectangle -->
+	<div style="background-color:#fefcd7;width:70%;float:left">
+	<br /><br /><br />
+	<!-- This table contains a table and the box color -->
+	<table align="center">
+		<tr>
+			<td>
+				<!-- The controls -->
+				<table width="350">
+					<tr>
+						<td style="text-align:right">Red:</td>
+						<td style="text-align:center"> 0<input id="RRed" type="range" name="red_component" min="0" max="255">255 </td>
+						<td style="text-align:left"><input type="text" size="3" readOnly="true" id="TRed" value="0"></td>
+					</tr>
+					<tr>
+						<td style="text-align:right">Green:</td>
+						<td style="text-align:center"> 0<input id="RGreen" type="range" name="green_component" min="0" max="255" oninput="updateAll(1)">255 </td>
+						<td style="text-align:left"><input type="text" size="3" readOnly="true" id="TGreen" value="0"></td>
+					</tr>
+					<tr>
+						<td style="text-align:right">Blue:</td>
+						<td style="text-align:center"> 0<input id="RBlue" type="range" name="blue_component" min="0" max="255" oninput="updateAll(2)">255 </td>
+						<td style="text-align:left"><input type="text" size="3" readOnly="true" id="TBlue" value="0"></td>
+					</tr>
+				</table>
+			</td>
+			<td>
+				<!-- The box color -->
+				<div id="box_color" style="background-color:#FFD700;height:100px;width:100px;float:left;border:1px solid black;"></div>
+			</td>
+			<td>
+				<canvas id="canvas01" width="256" height="256" style="border:1px solid black;"></canvas>
+			</td>
+			<td>
+				<canvas id="canvas02" width="25" height="256" style="border:1px solid black;"></canvas>
+			</td>
+		</tr>
+	</table>
+	<br /><br /><br />
+	</div>
+	<!-- An "invisivle" left bar -->
+	<div style="background-color:#232b17;height:400px;width:15%;float:left"></div>
+	<p id="debug" style="color:white;"></p>
+	
+	<script>
+		var	global_imageData01 = document.getElementById("canvas01").getContext("2d").createImageData(document.getElementById("canvas01").width, document.getElementById("canvas01").height);
+		var	global_imageData02 = document.getElementById("canvas02").getContext("2d").createImageData(document.getElementById("canvas02").width, document.getElementById("canvas02").height);
+		var global_active1 = 0;
+		var global_active2 = 1;
+		var global_fixed = 2;
+		var global_color = [0, 0, 0];
+		var	clickedCanvas01 = false;
+		var	clickedCanvas02 = false;
+		
+		//Make the box color have the color given by the range controls.
+		function	updateColor()
+		{
+			var r = document.getElementById("RRed").value;
+			var g = document.getElementById("RGreen").value;
+			var b = document.getElementById("RBlue").value;
+			document.getElementById("box_color").style.backgroundColor = "rgb("+r+","+g+","+b+")";
+		}
+		
+		//Make the text boxes show the actual value of the range controls.
+		function	updateTexts()
+		{
+			document.getElementById("TRed").value = document.getElementById("RRed").value;
+			document.getElementById("TGreen").value = document.getElementById("RGreen").value;
+			document.getElementById("TBlue").value = document.getElementById("RBlue").value;
+		}
+		
+		//Update everything according to the values of the range controls.
+		function	updateAll(fixed)
+		{
+			updateTexts();
+			updateColor();
+			global_color = [parseInt(document.getElementById("RRed").value), parseInt(document.getElementById("RGreen").value), 
+							parseInt(document.getElementById("RBlue").value)];
+			
+			if(fixed == 0)
+			{
+				global_active1 = 1; global_active2 = 2; global_fixed = 0;
+			}
+			else if(fixed == 1)
+			{
+				global_active1 = 0; global_active2 = 2; global_fixed = 1;
+			}	
+			else 
+			{
+				global_active1 = 0; global_active2 = 1; global_fixed = 2;
+			}
+			
+			updateCanvas01();
+			updateCanvas02();
+		}
+		
+		function	setPixel(global_imageData, x, y, color, a)
+		{
+			if(x < 0 || y < 0 || x > global_imageData.width || y > global_imageData.height) return;
+			index = (x + y * global_imageData.width) * 4;
+			global_imageData.data[index+0] = color[0];
+			global_imageData.data[index+1] = color[1];
+			global_imageData.data[index+2] = color[2];
+			global_imageData.data[index+3] = a;
+		}
+		
+		function	drawMark01(x, y)
+		{
+			var markColor;
+			var	markSize = 1;
+			
+			//Adhoc visible color, dependent on the illumination of the color.
+			if(global_color[0] + global_color[1] + global_color[2] < 3 * 70) markColor = [255, 255, 255];
+			else markColor = [0, 0, 0];
+			
+			//Draw the mark.
+			for(var i = -markSize; i <= markSize; ++i)
+			for(var j = -markSize; j <= markSize; ++j)
+				if(i != 0 || j != 0) setPixel(global_imageData01, x+i, y+j, markColor, 255);
+		}
+		
+		function	drawMark02(y)
+		{
+			var markColor;
+			var	markSize = 5;
+			
+			//Adhoc visible color, dependent on the illumination of the color.
+			if(global_color[0] + global_color[1] + global_color[2] < 3 * 70) markColor = [255, 255, 255];
+			else markColor = [0, 0, 0];
+			
+			//Draw the mark.
+			
+			for(var i = 0; i < markSize; ++i)
+			for(var j = -markSize+1; j <= markSize-1; ++j)
+			if(Math.abs(i-markSize+1)+Math.abs(j) < markSize)
+			{
+				setPixel(global_imageData02, 25-markSize+i, y-j, markColor, 255);
+				setPixel(global_imageData02, markSize-i-1, y-j, markColor, 255);
+			}
+		}
+		
+		function	updateCanvas01()
+		{
+			//Get the context the canvas and its context.
+			var	pos = 0;
+			
+			//Fill the container.
+			for(var r = 0; r < 256; ++r)
+			for(var c = 0; c < 256; ++c)
+			{
+				global_imageData01.data[pos + global_active1] = r;
+				global_imageData01.data[pos + global_active2] = c;
+				global_imageData01.data[pos + global_fixed] = global_color[global_fixed];
+				global_imageData01.data[pos + 3] = 255;
+				pos += 4;
+			}
+			
+			drawMark01(global_color[global_active2], global_color[global_active1]);
+			
+			//Move the image container into the canvas at coords 0,0.
+			document.getElementById("canvas01").getContext("2d").putImageData(global_imageData01, 0, 0);
+		}
+		
+		function	updateCanvas02()
+		{
+			//Get the context the canvas and its context.
+			var	pos = 0;
+			
+			//Fill the container.
+			for(var r = 0; r < 256; ++r)
+			for(var c = 0; c < 25; ++c)
+			{
+				global_imageData02.data[pos + global_active1] = global_color[global_active1];
+				global_imageData02.data[pos + global_active2] = global_color[global_active2];
+				global_imageData02.data[pos + global_fixed] = r;
+				global_imageData02.data[pos + 3] = 255;
+				pos += 4;
+			}
+			
+			drawMark02(global_color[global_fixed]);
+			
+			//Move the image container into the canvas at coords 0,0.
+			document.getElementById("canvas02").getContext("2d").putImageData(global_imageData02, 0, 0);
+		}
+		
+		function	canvas01Down(event)
+		{
+			var canvasPosition = getPosition(event.currentTarget);
+			//Get the click position relative to the canvas.
+			var	x = event.clientX - canvasPosition.x;
+			var	y = event.clientY - canvasPosition.y;
+			
+			//The coordinates are the active components.
+			if(global_fixed == 0)
+			{
+				document.getElementById("RRed").value = ""+global_color[0];
+				document.getElementById("RGreen").value = ""+y;
+				document.getElementById("RBlue").value = ""+x;
+			}
+			else if(global_fixed == 1)
+			{
+				document.getElementById("RRed").value = ""+y;
+				document.getElementById("RGreen").value = ""+global_color[1];
+				document.getElementById("RBlue").value = ""+x;
+			}
+			else
+			{
+				document.getElementById("RRed").value = ""+y;
+				document.getElementById("RGreen").value = ""+x;
+				document.getElementById("RBlue").value = ""+global_color[2];
+			}
+			
+			//Update.
+			updateAll(global_fixed);
+			clickedCanvas01 = true;
+		}
+		
+		function	canvas01Move(event)
+		{
+			if(clickedCanvas01)
+			{
+				canvas01Down(event);
+			}
+		}
+		
+		function	canvas01Up(event)
+		{
+			if(clickedCanvas01)
+			{
+				canvas01Down(event);
+				clickedCanvas01 = false;
+			}
+		}
+		
+		function	canvas02Down(event)
+		{
+			var canvasPosition = getPosition(event.currentTarget);
+			//Get the click position relative to the canvas.
+			var	x = event.clientX - canvasPosition.x;
+			var	y = event.clientY - canvasPosition.y;
+			
+			//The coordinates are the active components.
+			if(global_fixed == 0)
+			{
+				document.getElementById("RRed").value = ""+y;
+				document.getElementById("RGreen").value = ""+global_color[1];
+				document.getElementById("RBlue").value = ""+global_color[2];
+			}
+			else if(global_fixed == 1)
+			{
+				document.getElementById("RRed").value = ""+global_color[0];
+				document.getElementById("RGreen").value = ""+y;
+				document.getElementById("RBlue").value = ""+global_color[2];
+			}
+			else
+			{
+				document.getElementById("RRed").value = ""+global_color[0];
+				document.getElementById("RGreen").value = ""+global_color[1];
+				document.getElementById("RBlue").value = ""+y;
+			}
+			
+			//Update.
+			updateAll(global_fixed);
+			clickedCanvas02 = true;
+		}
+		
+		function	canvas02Move(event)
+		{
+			if(clickedCanvas02)
+			{
+				canvas02Down(event);
+			}
+		}
+		
+		function	canvas02Up(event)
+		{
+			if(clickedCanvas02)
+			{
+				canvas02Down(event);
+				clickedCanvas02 = false;
+			}
+		}
+		
+		function getPosition(element) {
+			var xPosition = 0;
+			var yPosition = 0;
+			//Get the position of the canvas relative to the client.
+			while (element) {
+				xPosition += (element.offsetLeft - element.scrollLeft + element.clientLeft);
+				yPosition += (element.offsetTop - element.scrollTop + element.clientTop);
+				element = element.offsetParent;
+			}
+			return { x: xPosition, y: yPosition };
+		}
+		
+		//Set default values for the range controls and update.
+		document.getElementById("RRed").value = "166";
+		document.getElementById("RRed").addEventListener("input", function(){updateAll(0)}, false);
+		document.getElementById("RRed").addEventListener("click", function(){if(global_fixed != 0) updateAll(0)}, false);
+		document.getElementById("RGreen").value = "203";
+		document.getElementById("RGreen").addEventListener("input", function(){updateAll(1)}, false);
+		document.getElementById("RGreen").addEventListener("click", function(){if(global_fixed != 1) updateAll(1)}, false);
+		document.getElementById("RBlue").value = "69";
+		document.getElementById("RBlue").addEventListener("input", function(){updateAll(2)}, false);
+		document.getElementById("RBlue").addEventListener("click", function(){if(global_fixed != 2) updateAll(2)}, false);
+		document.getElementById("canvas01").addEventListener("mousedown", canvas01Down, false);
+		document.getElementById("canvas01").addEventListener("mousemove", canvas01Move, false);
+		document.getElementById("canvas01").addEventListener("mouseup", canvas01Up, false);
+		document.getElementById("canvas02").addEventListener("mousedown", canvas02Down, false);
+		document.getElementById("canvas02").addEventListener("mousemove", canvas02Move, false);
+		document.getElementById("canvas02").addEventListener("mouseup", canvas02Up, false);
+		updateAll(0);
+	</script>
+</body>
+
+</html>
