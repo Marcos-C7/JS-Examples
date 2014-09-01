@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+
+<html>
+<!-- The header -->
+<head>
+	<title>C7 JavaScript</title>
+	<style> body{margin:0px; padding:0px;} </style>
+</head>
+
+<!-- The body -->
+<body style="background-color:#232b17;">
+	<!-- The title bar -->
+	<div style="background-color:#a6cb45;width:100%;">
+		<h1 style="text-align:center; color:#394625; padding:5px; margin:0; font-family:serif;">Splatter</h1>
+	</div><br />
+	
+	<!-- An "invisivle" left bar -->
+	<div style="background-color:#232b17;height:300px;width:15%;float:left"></div>
+	
+	<!-- The central rectangle -->
+	<div style="background-color:#fefcd7;width:70%;float:left">
+		<br /><br /><br />
+		<!-- This table contains a table and the box color -->
+		<table align="center">
+			<tr>
+				<td colspan="4">
+					<canvas id="canvas01" width="850" height="400" style="border:1px solid black;"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align:right;">
+					<button id="addB" type="button" style="width:120px; height:30px; font-size:1.0em; font-family:serif;">Add balls</button>
+				</td>
+				<td style="text-align:center;">
+					<button id="removeB" type="button" style="width:120px; height:30px; font-size:1.0em; font-family:serif;">Remove balls</button>
+				</td>
+				<td style="text-align:left;">
+					Number of balls to add/remove: <input id="numberT" type="text" size="5" value="30">
+				</td>
+				<td style="text-align:right;">
+					<button id="clearB" type="button" style="width:100px; height:30px; font-size:1.0em; font-family:serif;">Clear</button>
+				</td>
+			</tr>
+		</table>
+		<br /><br /><br />
+	</div>
+	
+	
+	<script>
+		//INTIALIZATION CODE
+		var	board = new Board("canvas01", "#fefcd7");
+		
+		//Event listener.
+		document.getElementById("addB").addEventListener("click", function(){board.addBalls(parseInt(document.getElementById("numberT").value))}, false);
+		document.getElementById("removeB").addEventListener("click", function(){board.removeBalls(parseInt(document.getElementById("numberT").value))}, false);
+		document.getElementById("clearB").addEventListener("click", function(){board.clear()}, false);
+		
+		
+		//OBJECTS
+		function	Point(x, y)
+		{
+			this.x = (x === undefined ? 0 : x);
+			this.y = (y === undefined ? 0 : y);
+		}
+		
+		function	Ball(pos, radius, color, speed)
+		{
+			this.pos = (pos === undefined ? new Point(0, 0) : new Point(pos.x, pos.y));
+			this.radius = (radius === undefined ? 0 : radius);
+			this.color = (color === undefined ? "#000000" : color)
+		}
+		
+		function	Board(canvasID, bgColor)
+		{
+			//Attributes.
+			this.canvas = document.getElementById(canvasID);
+			this.context = this.canvas.getContext("2d");
+			this.balls = [];
+			this.backgroundColor = (bgColor === undefined ? "#ffffff" : bgColor);
+			
+			//Methods.
+			this.width = function()		{return this.canvas.width;}
+			this.height = function()	{return this.canvas.height;}
+			this.numBalls = function()	{return this.balls.length;}
+			
+			this.addBalls = function(n)
+			{
+				for(var i = 0; i < n; ++i)
+					this.balls.push(	new Ball(new Point(getRandomInt(0, this.width() - 1), getRandomInt(0, this.height()) - 1),
+											getRandomInt(5, 51),
+											rgbToHex(getRandomInt(20, 255), getRandomInt(20, 255), 150)));
+				this.ereaseBoard();
+				this.drawBalls();
+			}
+			
+			this.removeBalls = function(n)
+			{
+				while(this.numBalls() > 0 && --n >= 0) {this.balls.pop()};
+				board.ereaseBoard();
+				board.drawBalls();
+			}
+			
+			this.clear = function()
+			{
+				while(this.numBalls() > 0) {this.balls.pop();}
+				this.ereaseBoard();
+			}
+			
+			this.drawBalls = function(balls)
+			{
+				if(balls === undefined || balls === null || balls === 0) balls = this.balls;
+				var oldFill = this.context.fillStyle;
+				
+				for(var i = 0; i < balls.length; ++i)
+				{
+					this.context.fillStyle = balls[i].color;
+					this.context.beginPath();
+					this.context.arc(balls[i].pos.x, balls[i].pos.y, balls[i].radius, 0, 2*Math.PI);
+					this.context.fill();
+					this.context.closePath();
+				}
+				
+				this.context.fillStyle = oldFill;
+			}
+			
+			this.ereaseBoard = function()
+			{
+				var oldFill = this.context.fillStyle;
+				
+				this.context.beginPath();
+				this.context.fillStyle = this.backgroundColor;
+				this.context.fillRect(0, 0, this.width(), this.height());
+				this.context.closePath();
+				
+				this.context.fillStyle = oldFill;
+			}
+			
+			this.ereaseBoard();
+		}
+		
+		//AUXILIARY FUNCTIONS
+		function rgbToHex(r, g, b)		{	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);	}
+		function getRandomInt(min, max)	{	return Math.floor(Math.random() * (max - min + 1)) + min;	}
+		
+	</script>
+</body>
+
+</html>
