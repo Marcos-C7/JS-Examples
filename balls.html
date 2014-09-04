@@ -11,7 +11,7 @@
 <body style="background-color:#232b17;">
 	<!-- The title bar -->
 	<div style="background-color:#a6cb45;width:100%;">
-		<h1 style="text-align:center; color:#394625; padding:5px; margin:0; font-family:serif;">Drag and THROW the balls! (ultra beta of beta)</h1>
+		<h1 style="text-align:center; color:#394625; padding:5px; margin:0; font-family:serif;">Drag and THROW the balls!</h1>
 	</div><br />
 	
 	<!-- An "invisivle" left bar -->
@@ -54,7 +54,7 @@
 		var	oldMousePos = new Point(0, 0);
 		var	currentMousePos = new Point(0, 0);
 		var	oldDragPos = new Point(0, 0);
-		var	mouseScanTime = 0.1;
+		var	mouseScanTime = 0.09;
 		
 		//Event listener.
 		document.getElementById("addB").addEventListener("click", function(){board.addBall(parseInt(document.getElementById("numberT").value))}, false);
@@ -106,12 +106,7 @@
 			this.prev_pos = (pos === undefined ? new Point(this.pos.x, this.pos.y) : new Point(pos.x, pos.y));
 			this.fixed = false;
 			
-			this.fix = function()
-			{
-				this.speed.x = 0; this.speed.y = 0;
-				this.fixed = true;
-			}
-			
+			this.fix = function() {this.speed.x = 0; this.speed.y = 0; this.fixed = true;}
 			this.unfix = function(speed){this.fixed = false; this.speed = (speed == undefined ? new Point(0, 0) : speed);}
 			
 			this.updatePosition = function(dt)
@@ -146,6 +141,29 @@
 			
 			this.handleBallsCollision = function(ball)
 			{
+				var	dposx = ball.pos.x - this.pos.x, dposy = ball.pos.y - this.pos.y;
+				var	dvx = ball.speed.x - this.speed.x; dvy = ball.speed.y - this.speed.y;
+				var	dvdr = dposx * dvx + dposy * dvy;
+				var	dist = this.radius + ball.radius;
+				var	J = 2 * this.mass * ball.mass * dvdr /((this.mass + ball.mass) * dist);
+				var	Jx = J * dposx / dist;
+				var	Jy = J * dposy / dist;
+				
+				var	dist2 = ((this.radius + ball.radius) - this.pos.subs(ball.pos).magnitud()) / 2;
+				this.pos = this.pos.add( this.pos.subs(ball.pos).normalized().scale(this.fixed ? 0 : dist2) );
+				ball.pos = ball.pos.add( ball.pos.subs(this.pos).normalized().scale(this.fixed ? 2*dist2 : dist2) );
+				
+				
+				this.speed.x += Jx / this.mass;
+				this.speed.y += Jy / this.mass;
+				ball.speed.x -= Jx / this.mass;
+				ball.speed.y -= Jy / this.mass;
+				
+				
+				/*
+				var dist;
+				var c1ToC2;
+				
 				dist = ((this.radius + ball.radius) - this.pos.subs(ball.pos).magnitud()) / 2;
 				this.pos = this.pos.add( this.pos.subs(ball.pos).normalized().scale(this.fixed ? 0 : dist) );
 				ball.pos = ball.pos.add( ball.pos.subs(this.pos).normalized().scale(this.fixed ? 2*dist : dist) );
@@ -169,7 +187,9 @@
 					if(!this.fixed) this.speed = this.speed.scale(-1).reflex(this.pos.subs(ball.pos));
 					ball.speed = ball.speed.scale(-1).reflex(ball.pos.subs(this.pos));
 				}
+				*/
 			}
+			
 		}
 		
 		function	Board(canvasID, bgColor, fps)
@@ -199,7 +219,7 @@
 											));
 			}
 			
-			this.removeBall = function(n)
+			this.removeBall = function()
 			{
 				if(this.numBalls() > 0) {this.balls.pop()};
 			}
@@ -248,9 +268,7 @@
 			this.updateBalls = function()
 			{
 				var collisions;
-				var reflex;
-				var dist;
-				var c1ToC2;
+				
 				//Update positions of all the balls.
 				for(var b = 0; b < this.numBalls(); ++b) this.balls[b].updatePosition(this.dt);
 				
@@ -394,4 +412,13 @@
 
 </html>
 
-
+board.balls.push( new Ball(new Point(280, 370), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(340, 370), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(400, 370), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(460, 370), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(310, 370 - 51.96152), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(370, 370 - 51.96152), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(430, 370 - 51.96152), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(340, 370 - 103.92304), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(400, 370 - 103.92304), 30, "#000000", new Point(0, 0) ));
+board.balls.push( new Ball(new Point(370, 370 - 155.88457), 30, "#000000", new Point(0, 0) ));
