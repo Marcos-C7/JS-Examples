@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+
+<html>
+<!-- The header -->
+<head>
+	<title>C7 JavaScript</title>
+	<style> body{margin:0px; padding:0px;} </style>
+</head>
+
+<!-- The body -->
+<body style="background-color:#232b17;">
+	<!-- The title bar -->
+	<div style="background-color:#a6cb45;width:100%;">
+		<h1 style="text-align:center; color:#394625; padding:5px; margin:0; font-family:serif;">Drag and THROW the balls! (ultra beta of beta)</h1>
+	</div><br />
+	
+	<!-- An "invisivle" left bar -->
+	<div style="background-color:#232b17;height:300px;width:15%;float:left"></div>
+	
+	<!-- The central rectangle -->
+	<div style="background-color:#fefcd7;width:70%;float:left">
+		<br /><br /><br />
+		<!-- This table contains a table and the box color -->
+		<table align="center">
+			<tr>
+				<td colspan="4">
+					<canvas id="canvas01" width="850" height="400" style="border:1px solid black;"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align:right;">
+					<button id="addB" type="button" style="width:120px; height:30px; font-size:1.0em; font-family:serif;">Add ball</button>
+				</td>
+				<td style="text-align:center;">
+					<button id="removeB" type="button" style="width:120px; height:30px; font-size:1.0em; font-family:serif;">Remove ball</button>
+				</td>
+				<td style="text-align:left;">
+					Radius of new ball: <input id="numberT" type="text" size="5" value="30">
+				</td>
+				<td style="text-align:right;">
+					<button id="clearB" type="button" style="width:100px; height:30px; font-size:1.0em; font-family:serif;">Clear</button>
+				</td>
+			</tr>
+		</table>
+		<br /><br /><br />
+	</div>
+	
+	
+	<script>
+		//INTIALIZATION CODE
+		var	board = new Board("canvas01", "#fefcd7", 140);
+		var	draggingBall = false;
+		var	mousePos = new Point(0, 0);
+		var	oldMousePos = new Point(0, 0);
+		var	currentMousePos = new Point(0, 0);
+		var	oldDragPos = new Point(0, 0);
+		var	mouseScanTime = 0.1;
+		
+		//Event listener.
+		document.getElementById("addB").addEventListener("click", function(){board.addBall(parseInt(document.getElementById("numberT").value))}, false);
+		document.getElementById("removeB").addEventListener("click", function(){board.removeBall()}, false);
+		document.getElementById("clearB").addEventListener("click", function(){board.clear()}, false);
+		document.getElementById("canvas01").addEventListener("mousedown", canvas01Down, false);
+		document.getElementById("canvas01").addEventListener("mousemove", canvas01Move, false);
+		document.getElementById("canvas01").addEventListener("mouseup", canvas01Up, false);
+		document.addEventListener('mousemove', function(e){mousePos.x = e.clientX || e.pageX; mousePos.y = e.clientY || e.pageY;}, false);
+		
+		setInterval(function(){board.updateBoard();}, 1000 / board.fps);
+		setInterval(checkMousePos, 1000 * mouseScanTime);
+		
+		//OBJECTS
+		function	Point(x, y)
+		{
+			this.x = (x === undefined ? 0 : x);
+			this.y = (y === undefined ? 0 : y);
+			
+			this.add = function(P) {return new Point(this.x + P.x, this.y + P.y);}
+			this.subs = function(P) {return new Point(this.x - P.x, this.y - P.y);}
+			this.dotProduct = function(P) {return this.x * P.x + this.y * P.y;}
+			this.distance = function(P) {return Math.sqrt((this.x - P.x)*(this.x - P.x) + (this.y - P.y)*(this.y - P.y));}
+			this.scale = function(c) {return new Point(c * this.x, c * this.y);}
+			this.magnitud = function() {return Math.sqrt(this.x * this.x + this.y * this.y);}
+			this.sqrMagnitud = function() {return this.x * this.x + this.y * this.y;}
+			this.normalized = function() {return this.scale(1/this.magnitud());}
+			
+			
+			//Reflexes this vector with respect to vector z.
+			this.reflex = function(z)
+			{
+				var refl = z.scale(2.0 * z.dotProduct(this) / z.dotProduct(z));
+				refl.x -= this.x;
+				refl.y -= this.y;
+				refl = refl.normalized();
+				refl = refl.scale(this.magnitud());
+				return refl;
+			}
+		}
+		
+		function	Ball(pos, radius, color, speed)
+		{
+			this.pos = (pos === undefined ? new Point(0, 0) : new Point(pos.x, pos.y));
+			this.radius = (radius === undefined ? 0 : radius);
+			this.color = (color === undefined ? "#000000" : color)
+			this.speed = (speed === undefined ? new Point(0, 0) : new Point(speed.x, speed.y));
+			this.mass = this.radius / 2;
+			this.prev_pos = (pos === undefined ? new Point(this.pos.x, this.pos.y) : new Point(pos.x, pos.y));
+			this.fixed = false;
+			
+			this.fix = function()
+			{
+				this.speed.x = 0; this.speed.y = 0;
+				this.fixed = true;
+			}
+			
+			this.unfix = function(speed){this.fixed = false; this.speed = (speed == undefined ? new Point(0, 0) : speed);}
+			
+			this.updatePosition = function(dt)
+			{
+				if(this.fixed) return;
+				var F = new Point(0, this.mass * 9.8);
+				this.speed.x += (dt / this.mass) * F.x;
+				this.speed.y += (dt / this.mass) * F.y;
+				this.prev_pos.x = this.pos.x;
+				this.prev_pos.y = this.pos.y;
+				this.pos.x += this.speed.x * dt;
+				this.pos.y += this.speed.y * dt;
+			}
+			
+			this.checkBallsCollision = function(ball)
+			{
+				var	distanceVect = ball.pos.subs(this.pos);
+				if(distanceVect.sqrMagnitud() < (ball.radius + this.radius) * (ball.radius + this.radius)) return true;
+				else return false;
+			}
+			
+			//Returns a 4-D vector, 1st entry for left wall, 2nd for right wall, 3rd for upper wall and 4th for bottom wall.
+			this.checkWallsCollision = function(canvas)
+			{
+				collisions = [0, 0, 0, 0];
+				if(this.pos.x - this.radius < 0) collisions[0] = 1;
+				else if(this.pos.x + this.radius > canvas.width) collisions[1] = 1;
+				else if(this.pos.y - this.radius < 0) collisions[2] = 1;
+				else if(this.pos.y + this.radius > canvas.height) collisions[3] = 1;
+				return collisions;
+			}
+			
+			this.handleBallsCollision = function(ball)
+			{
+				dist = ((this.radius + ball.radius) - this.pos.subs(ball.pos).magnitud()) / 2;
+				this.pos = this.pos.add( this.pos.subs(ball.pos).normalized().scale(this.fixed ? 0 : dist) );
+				ball.pos = ball.pos.add( ball.pos.subs(this.pos).normalized().scale(this.fixed ? 2*dist : dist) );
+				
+				if(this.speed.dotProduct(ball.speed) >= 0)
+				{
+					c1ToC2 = ball.pos.subs(this.pos);
+					if(c1ToC2.dotProduct(this.speed) / (c1ToC2.magnitud() * this.speed.magnitud) >= 0.707107)
+					{
+						if(!this.fixed) this.speed = this.speed.scale(-1).reflex(this.pos.subs(ball.pos));
+						ball.speed = ball.speed.reflex(ball.pos.subs(this.pos));
+					}
+					else
+					{
+						if(!this.fixed) this.speed = this.speed.reflex(this.pos.subs(ball.pos));
+						ball.speed = ball.speed.scale(-1).reflex(ball.pos.subs(this.pos));
+					}
+				}
+				else
+				{
+					if(!this.fixed) this.speed = this.speed.scale(-1).reflex(this.pos.subs(ball.pos));
+					ball.speed = ball.speed.scale(-1).reflex(ball.pos.subs(this.pos));
+				}
+			}
+		}
+		
+		function	Board(canvasID, bgColor, fps)
+		{
+			//Attributes.
+			this.canvas = document.getElementById(canvasID);
+			this.context = this.canvas.getContext("2d");
+			this.balls = [];
+			this.backgroundColor = (bgColor === undefined ? "#ffffff" : bgColor);
+			this.fps = (fps === undefined ? 50.0 : fps);
+			this.dt = 0.05;
+			this.fixed = null;
+			
+			//Methods.
+			this.width = function()		{return this.canvas.width;}
+			this.height = function()	{return this.canvas.height;}
+			this.numBalls = function()	{return this.balls.length;}
+			
+			this.addBall = function(r)
+			{
+				if(r < 3) r = 3;
+				else if(r > Math.min(this.width(), this.height()) / 3) r = Math.min(this.width(), this.height()) / 3;
+				this.balls.push(new Ball(	new Point(this.width()/2, r), 
+											r, 
+											rgbToHex(getRandomInt(20, 255), getRandomInt(20, 255), 150)
+											,new Point(getRandomInt(-100,100), getRandomInt(-50,50))
+											));
+			}
+			
+			this.removeBall = function(n)
+			{
+				if(this.numBalls() > 0) {this.balls.pop()};
+			}
+			
+			this.clear = function()
+			{
+				while(this.numBalls() > 0) {this.balls.pop();}
+			}
+			
+			this.drawBalls = function(balls)
+			{
+				if(balls === undefined || balls === null || balls === 0) balls = this.balls;
+				var oldFill = this.context.fillStyle;
+				
+				for(var i = 0; i < balls.length; ++i)
+				{
+					this.context.fillStyle = balls[i].color;
+					this.context.beginPath();
+					this.context.arc(balls[i].pos.x, balls[i].pos.y, balls[i].radius, 0, 2*Math.PI);
+					this.context.fill();
+					this.context.closePath();
+				}
+				
+				this.context.fillStyle = oldFill;
+			}
+			
+			this.ereaseBoard = function()
+			{
+				var oldFill = this.context.fillStyle;
+				
+				this.context.beginPath();
+				this.context.fillStyle = this.backgroundColor;
+				this.context.fillRect(0, 0, this.width(), this.height());
+				this.context.closePath();
+				
+				this.context.fillStyle = oldFill;
+			}
+			
+			this.updateBoard = function()
+			{
+				this.updateBalls();
+				this.ereaseBoard();
+				this.drawBalls();
+			}
+			
+			this.updateBalls = function()
+			{
+				var collisions;
+				var reflex;
+				var dist;
+				var c1ToC2;
+				//Update positions of all the balls.
+				for(var b = 0; b < this.numBalls(); ++b) this.balls[b].updatePosition(this.dt);
+				
+				//Check for collisions with other balls.
+				for(var b1 = 0; b1 < this.numBalls(); ++b1)
+				for(var b2 = b1 + 1; b2 < this.numBalls(); ++b2)
+				{
+					if(this.balls[b1].checkBallsCollision(this.balls[b2])) this.balls[b1].handleBallsCollision(this.balls[b2]);
+				}
+				
+				//Check for wall collisions.
+				for(var b = 0; b < this.numBalls(); ++b)
+				{
+					collisions = this.balls[b].checkWallsCollision(this.canvas);
+					for(var w = 0; w < 4; ++w)
+					{
+						if(collisions[w] != 0)
+						{
+							if(w == 0) 
+							{	
+								this.balls[b].pos.x	= this.balls[b].radius;
+								this.balls[b].speed	= this.balls[b].speed.scale(-1).reflex(new Point(1, 0));
+							}
+							else if(w == 1) 
+							{
+								this.balls[b].pos.x	= this.width() - this.balls[b].radius - 1;
+								this.balls[b].speed	= this.balls[b].speed.scale(-1).reflex(new Point(-1, 0));
+							}
+							else if(w == 2)
+							{
+								this.balls[b].pos.y	= this.balls[b].radius;
+								this.balls[b].speed	= this.balls[b].speed.scale(-1).reflex(new Point(0, 1));
+							}
+							else if(w == 3)
+							{
+								this.balls[b].pos.y	= this.height() - this.balls[b].radius;
+								this.balls[b].speed	= this.balls[b].speed.scale(-1).reflex(new Point(0, -1));
+							}
+						}
+					}
+				}
+			}
+			
+			this.fix = function(b) {this.balls[b].fix();}
+			this.unfix = function(b, speed) {this.balls[b].unfix(speed === undefined ? new Point(0, 0) : speed);}
+			
+			this.fixBallInCoords = function(pos)
+			{
+				var ball;
+				for(var b = this.numBalls()-1; b >= 0; --b)
+				{
+					ball = this.balls[b];
+					if(ball.pos.distance(pos) <= ball.radius + 10)
+					{
+						ball.fix();
+						this.fixed = ball;
+						draggingBall = true;
+						return true;
+					}
+				}
+				return false;
+			}
+			
+			this.moveFixed = function(dpos)
+			{
+				this.fixed.pos = this.fixed.pos.add(dpos);
+			}
+			
+			this.throwFixed = function(speed)
+			{
+				this.fixed.unfix(speed === undefined ? new Point(0, 0) : speed);
+			}
+			
+			this.ereaseBoard();
+		}
+		
+		//AUXILIARY FUNCTIONS
+		function rgbToHex(r, g, b)		{	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);	}
+		function getRandomInt(min, max)	{	return Math.floor(Math.random() * (max - min + 1)) + min;	}
+		function getPosition(element)
+		{
+			var xPosition = 0;
+			var yPosition = 0;
+			//Get the position of the canvas relative to the client.
+			while (element) {
+				xPosition += (element.offsetLeft - element.scrollLeft + element.clientLeft);
+				yPosition += (element.offsetTop - element.scrollTop + element.clientTop);
+				element = element.offsetParent;
+			}
+			return { x: xPosition, y: yPosition };
+		}
+		
+		function	checkMousePos()
+		{
+			oldMousePos.x = currentMousePos.x; oldMousePos.y = currentMousePos.y;
+			currentMousePos.x = mousePos.x; currentMousePos.y = mousePos.y;
+		}
+		
+		//EVENT HANDLERS
+		function	canvas01Down(event)
+		{
+			var canvasPosition = getPosition(event.currentTarget);
+			//Get the click position relative to the canvas.
+			var	x = event.clientX - canvasPosition.x;
+			var	y = event.clientY - canvasPosition.y;
+			
+			if(board.fixBallInCoords(new Point(x, y))) oldDragPos = new Point(x, y);
+		}
+		
+		function	canvas01Move(event)
+		{
+			if(draggingBall && x != oldDragPos.x && y != oldDragPos.y)
+			{
+				var canvasPosition = getPosition(event.currentTarget);
+				//Get the click position relative to the canvas.
+				var	x = event.clientX - canvasPosition.x;
+				var	y = event.clientY - canvasPosition.y;
+				
+				board.moveFixed((new Point(x, y)).subs(oldDragPos));
+				oldDragPos = new Point(x, y);
+			}
+		}
+		
+		function	canvas01Up(event)
+		{
+			if(draggingBall)
+			{
+				var canvasPosition = getPosition(event.currentTarget);
+				//Get the click position relative to the canvas.
+				var	x = event.clientX - canvasPosition.x;
+				var	y = event.clientY - canvasPosition.y;
+				
+				board.throwFixed(currentMousePos.subs(oldMousePos).scale(1 / (15*mouseScanTime)));
+				oldDragPos = new Point(0, 0);
+				draggingBall = false;
+			}
+		}
+		
+	</script>
+</body>
+
+</html>
+
+
