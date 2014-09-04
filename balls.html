@@ -158,36 +158,6 @@
 				this.speed.y += Jy / this.mass;
 				ball.speed.x -= Jx / this.mass;
 				ball.speed.y -= Jy / this.mass;
-				
-				
-				/*
-				var dist;
-				var c1ToC2;
-				
-				dist = ((this.radius + ball.radius) - this.pos.subs(ball.pos).magnitud()) / 2;
-				this.pos = this.pos.add( this.pos.subs(ball.pos).normalized().scale(this.fixed ? 0 : dist) );
-				ball.pos = ball.pos.add( ball.pos.subs(this.pos).normalized().scale(this.fixed ? 2*dist : dist) );
-				
-				if(this.speed.dotProduct(ball.speed) >= 0)
-				{
-					c1ToC2 = ball.pos.subs(this.pos);
-					if(c1ToC2.dotProduct(this.speed) / (c1ToC2.magnitud() * this.speed.magnitud) >= 0.707107)
-					{
-						if(!this.fixed) this.speed = this.speed.scale(-1).reflex(this.pos.subs(ball.pos));
-						ball.speed = ball.speed.reflex(ball.pos.subs(this.pos));
-					}
-					else
-					{
-						if(!this.fixed) this.speed = this.speed.reflex(this.pos.subs(ball.pos));
-						ball.speed = ball.speed.scale(-1).reflex(ball.pos.subs(this.pos));
-					}
-				}
-				else
-				{
-					if(!this.fixed) this.speed = this.speed.scale(-1).reflex(this.pos.subs(ball.pos));
-					ball.speed = ball.speed.scale(-1).reflex(ball.pos.subs(this.pos));
-				}
-				*/
 			}
 			
 		}
@@ -412,13 +382,3 @@
 
 </html>
 
-board.balls.push( new Ball(new Point(280, 370), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(340, 370), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(400, 370), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(460, 370), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(310, 370 - 51.96152), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(370, 370 - 51.96152), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(430, 370 - 51.96152), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(340, 370 - 103.92304), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(400, 370 - 103.92304), 30, "#000000", new Point(0, 0) ));
-board.balls.push( new Ball(new Point(370, 370 - 155.88457), 30, "#000000", new Point(0, 0) ));
